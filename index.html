@@ -16,7 +16,7 @@
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);
-     font:500 14px/1.55 "Inter",system-ui,Segoe UI,Roboto,Arial;min-height:100vh;}
+     font:500 14px/1.5 "Inter",system-ui,Segoe UI,Roboto,Arial;min-height:100vh;}
 
 header{
   display:flex;justify-content:space-between;align-items:center;
@@ -103,11 +103,9 @@ td[contenteditable="true"]:focus{outline:2px solid var(--brand)}
 <div class="toolbar">
   <select id="yearSelect" title="Pilih Tahun"></select>
   <select id="monthSelect" title="Pilih Bulan"></select>
-  <!-- Tombol tambah/hapus HANYA untuk admin (disembunyikan default) -->
-  <button id="addRow" style="display:none;">Tambah Baris</button>
-  <button id="delRow" style="display:none;">Hapus Baris</button>
+  <button id="addRow">Tambah Baris</button>
+  <button id="delRow">Hapus Baris</button>
   <span class="chip">Mode: <strong id="modeInfo">View Only</strong></span>
-  <span class="chip" id="syncBadge" style="display:none;">Sinkronisasi…</span>
 </div>
 
 <div class="wrap">
@@ -124,269 +122,255 @@ td[contenteditable="true"]:focus{outline:2px solid var(--brand)}
   </div>
 </div>
 
-<!-- Firebase (CDN) + App logic -->
-<script type="module">
-/* ================= Firebase Setup (Realtime Database) ================= */
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-analytics.js";
-import { getDatabase, ref, onValue, set, update } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+<script>
+(()=>{
+  const months = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+  const ADMIN_PASSWORD = "q11";
+  const STORAGE_KEY = "clean-weekly-v2"; // struktur baru
 
-/* ====== GANTI CONFIG INI JIKA PERLU (dari Firebase Console milikmu) ====== */
-const firebaseConfig = {
-  apiKey: "AIzaSyCX-M-eNScPTqmtIOp7Zs1fFwkIg27VkF0",
-  authDomain: "data-jamaah-dapur.firebaseapp.com",
-  databaseURL: "https://data-jamaah-dapur-default-rtdb.firebaseio.com",
-  projectId: "data-jamaah-dapur",
-  storageBucket: "data-jamaah-dapur.firebasestorage.app",
-  messagingSenderId: "963461575071",
-  appId: "1:963461575071:web:af16848f8f54b99c178daa",
-  measurementId: "G-5X4FTYVR5S"
-};
+  const dom = {
+    thead: document.getElementById('thead'),
+    tbody: document.getElementById('tbody'),
+    note: document.getElementById('note'),
+    year: document.getElementById('yearSelect'),
+    month: document.getElementById('monthSelect'),
+    addRow: document.getElementById('addRow'),
+    delRow: document.getElementById('delRow'),
+    modeInfo: document.getElementById('modeInfo'),
+    adminPass: document.getElementById('adminPass'),
+    loginBtn: document.getElementById('loginBtn'),
+    logoutBtn: document.getElementById('logoutBtn')
+  };
 
-const app = initializeApp(firebaseConfig);
-try { getAnalytics(app); } catch(e) {/* analytics optional di local file */ }
-const db = getDatabase(app);
+  /* ========= STATE ========= */
+  let isAdmin = false;
+  let currentYear = new Date().getFullYear();
+  let currentMonth = new Date().getMonth();
 
-/* ================= App State & DOM ================= */
-const ADMIN_PASSWORD = "q11";                 // PIN admin
-const PATH_ROOT = "presensi_kebersihan";      // path khusus app ini
+  /* ========= STORAGE HELPERS ========= */
+  const loadStore = () => JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+  const saveStore = (obj) => localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+  const ymKey = (y,m) => `${y}-${m}`;
 
-const months = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
-const dom = {
-  thead: document.getElementById('thead'),
-  tbody: document.getElementById('tbody'),
-  note: document.getElementById('note'),
-  year: document.getElementById('yearSelect'),
-  month: document.getElementById('monthSelect'),
-  addRow: document.getElementById('addRow'),
-  delRow: document.getElementById('delRow'),
-  modeInfo: document.getElementById('modeInfo'),
-  adminPass: document.getElementById('adminPass'),
-  loginBtn: document.getElementById('loginBtn'),
-  logoutBtn: document.getElementById('logoutBtn'),
-  syncBadge: document.getElementById('syncBadge'),
-};
+  /* ========= YEARS & MONTHS UI ========= */
+  function initSelectors(){
+    // Tahun dinamis: -5 s/d +7 dari tahun ini
+    const nowY = new Date().getFullYear();
+    for(let y=nowY-5; y<=nowY+7; y++){
+      const o = document.createElement('option');
+      o.value = y; o.textContent = y;
+      dom.year.appendChild(o);
+    }
+    dom.year.value = currentYear;
 
-let isAdmin = false;
-let currentYear = new Date().getFullYear();
-let currentMonth = new Date().getMonth();
-let lastData = {};            // cache snapshot terkini untuk render cepat
-let isSelfSaving = false;     // cegah loop render sendiri
-
-/* ================= Utilities ================= */
-const ymKey = (y,m) => `${y}-${m}`;
-const getWeeksCount = (y,m) => Math.ceil(new Date(y,m+1,0).getDate()/7);
-function showSync(on){ dom.syncBadge.style.display = on ? "inline-block" : "none"; }
-function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
-
-/* ================= Build UI ================= */
-function buildHead(weeks){
-  dom.thead.innerHTML = "";
-  const tr = document.createElement('tr');
-  tr.innerHTML = "<th>Nama Area</th><th>PJ Kebersihan</th>";
-  for(let i=1;i<=weeks;i++){
-    const th = document.createElement('th'); th.textContent = `Minggu ke-${i}`;
-    tr.appendChild(th);
-  }
-  dom.thead.appendChild(tr);
-}
-
-function createRow(area="", pj="", checks=[], weekCount=4){
-  const tr = document.createElement('tr');
-
-  const tdArea = document.createElement('td');
-  tdArea.textContent = area;
-  tdArea.contentEditable = isAdmin;   // viewer tidak bisa edit
-  tr.appendChild(tdArea);
-
-  const tdPIC = document.createElement('td');
-  tdPIC.textContent = pj;
-  tdPIC.contentEditable = isAdmin;    // viewer tidak bisa edit
-  tr.appendChild(tdPIC);
-
-  for(let i=0;i<weekCount;i++){
-    const td = document.createElement('td');
-    const cb = document.createElement('input');
-    cb.type = "checkbox";
-    cb.className = "checkbox";
-    cb.checked = !!checks[i];
-    cb.disabled = !isAdmin;           // viewer checkbox terkunci
-    cb.addEventListener('change', onAnyEdit);
-    td.appendChild(cb);
-    tr.appendChild(td);
+    months.forEach((m,i)=>{
+      const o = document.createElement('option');
+      o.value = i; o.textContent = m;
+      dom.month.appendChild(o);
+    });
+    dom.month.value = currentMonth;
   }
 
-  tdArea.addEventListener('input', debouncedAnyEdit);
-  tdPIC.addEventListener('input', debouncedAnyEdit);
-
-  return tr;
-}
-
-function applyMode(){
-  dom.modeInfo.textContent = isAdmin ? "Admin" : "View Only";
-  dom.note.contentEditable = isAdmin ? "true" : "false";
-  dom.addRow.style.display = isAdmin ? "inline-block" : "none";
-  dom.delRow.style.display = isAdmin ? "inline-block" : "none";
-
-  // toggle editability untuk baris yang sudah ada
-  [...dom.tbody.querySelectorAll('tr')].forEach(tr=>{
-    const tds = tr.querySelectorAll('td');
-    tds[0].contentEditable = isAdmin;
-    tds[1].contentEditable = isAdmin;
-    tr.querySelectorAll('input[type="checkbox"]').forEach(cb=> cb.disabled = !isAdmin);
-  });
-}
-
-/* ================= Data <-> UI ================= */
-function renderFromData(store){
-  lastData = store || {};
-  const y = currentYear, m = currentMonth;
-  const weeks = getWeeksCount(y,m);
-  buildHead(weeks);
-  dom.tbody.innerHTML = "";
-
-  const areas = lastData.areas && Array.isArray(lastData.areas) && lastData.areas.length
-    ? lastData.areas
-    : [{area:"Lobby", pj:"Budi"},{area:"Toilet", pj:"Siti"}];
-
-  const key = ymKey(y,m);
-  const checksForYM = (lastData.checklists && lastData.checklists[key]) || [];
-
-  for(let i=0;i<areas.length;i++){
-    const rowChecks = Array.from({length:weeks}, (_,w)=> (checksForYM[i] && checksForYM[i][w])===true);
-    dom.tbody.appendChild( createRow(areas[i].area, areas[i].pj, rowChecks, weeks) );
+  /* ========= WEEKS ========= */
+  function getWeeksCount(year,month){
+    const days = new Date(year, month+1, 0).getDate();
+    return Math.ceil(days/7); // sederhana & konsisten
   }
 
-  dom.note.textContent = (lastData.notes && lastData.notes[key]) || "Hanya admin yang dapat mengubah catatan ini.";
-  applyMode();
-}
-
-function collectCurrentUI(){
-  const rows = [...dom.tbody.querySelectorAll('tr')];
-  const areas = rows.map(tr=>{
-    const tds = tr.querySelectorAll('td');
-    return { area: tds[0].textContent.trim(), pj: tds[1].textContent.trim() };
-  });
-  const checks = rows.map(tr=>{
-    return [...tr.querySelectorAll('input[type="checkbox"]')].map(cb=>cb.checked);
-  });
-  return { areas, checks, note: dom.note.textContent };
-}
-
-/* ================= Firebase Realtime ================= */
-const rootRef = ref(db, PATH_ROOT);
-onValue(rootRef, (snap)=>{
-  if(isSelfSaving){ // kita yang barusan menulis — abaikan satu siklus render
-    isSelfSaving = false;
-    showSync(false);
-    return;
+  function buildHead(weeks){
+    dom.thead.innerHTML = "";
+    const tr = document.createElement('tr');
+    tr.innerHTML = "<th>Nama Area</th><th>PJ Kebersihan</th>";
+    for(let i=1;i<=weeks;i++){
+      const th = document.createElement('th');
+      th.textContent = `Minggu ke-${i}`;
+      tr.appendChild(th);
+    }
+    dom.thead.appendChild(tr);
   }
-  const data = snap.exists() ? snap.val() : {};
-  renderFromData(data);
-});
 
-/* ================= AUTOSAVE (Admin only) ================= */
-function makeUpdatesForCurrent(data){
-  const key = ymKey(currentYear, currentMonth);
-  const updates = {};
-  updates[`${PATH_ROOT}/areas`] = data.areas;                  // global
-  updates[`${PATH_ROOT}/checklists/${key}`] = data.checks;     // per bulan-tahun
-  updates[`${PATH_ROOT}/notes/${key}`] = data.note;            // per bulan-tahun
-  return updates;
-}
+  /* ========= ROW FACTORY ========= */
+  function createRow(area="", pj="", checks=[], weekCount=4){
+    const tr = document.createElement('tr');
 
-function saveNow(){
-  if(!isAdmin) return;
-  const payload = collectCurrentUI();
-  const updates = makeUpdatesForCurrent(payload);
-  isSelfSaving = true;
-  showSync(true);
-  update(ref(db), updates).catch(err=>{
-    isSelfSaving = false;
-    showSync(false);
-    alert("Gagal menyimpan: "+(err?.message||err));
+    const tdArea = document.createElement('td');
+    tdArea.textContent = area;
+    tdArea.contentEditable = isAdmin;
+    tr.appendChild(tdArea);
+
+    const tdPIC = document.createElement('td');
+    tdPIC.textContent = pj;
+    tdPIC.contentEditable = isAdmin;
+    tr.appendChild(tdPIC);
+
+    for(let i=0;i<weekCount;i++){
+      const td = document.createElement('td');
+      const cb = document.createElement('input');
+      cb.type = "checkbox";
+      cb.className = "checkbox";
+      cb.checked = !!checks[i];
+      cb.disabled = !isAdmin;
+      // AUTOSAVE on change
+      cb.addEventListener('change', onAnyEdit);
+      td.appendChild(cb);
+      tr.appendChild(td);
+    }
+
+    // AUTOSAVE text edits (debounced)
+    tdArea.addEventListener('input', debouncedAnyEdit);
+    tdPIC.addEventListener('input', debouncedAnyEdit);
+
+    return tr;
+  }
+
+  /* ========= LOAD & RENDER ========= */
+  function render(y,m){
+    const store = loadStore();
+    // global areas, default bila belum ada
+    let areas = store.areas || [
+      {area:"Lobby", pj:"Budi"},
+      {area:"Toilet", pj:"Siti"}
+    ];
+
+    const weeks = getWeeksCount(y,m);
+    buildHead(weeks);
+    dom.tbody.innerHTML = "";
+
+    // checklists key per bulan-tahun
+    const key = ymKey(y,m);
+    const allChecks = (store.checklists && store.checklists[key]) || [];
+    // pastikan jumlah baris sama dengan areas
+    for(let i=0;i<areas.length;i++){
+      const rowChecks = Array.from({length:weeks}, (_,w)=> (allChecks[i] && allChecks[i][w])===true);
+      dom.tbody.appendChild( createRow(areas[i].area, areas[i].pj, rowChecks, weeks) );
+    }
+
+    // catatan per bulan-tahun
+    const noteMap = store.notes || {};
+    dom.note.textContent = noteMap[key] || "Hanya admin yang dapat mengubah catatan ini.";
+
+    applyMode(); // re-apply editability
+  }
+
+  /* ========= COLLECT & SAVE ========= */
+  function collectToStore(){
+    const store = loadStore();
+    // 1) simpan global areas (berlaku semua bulan/tahun)
+    const rows = [...dom.tbody.querySelectorAll('tr')];
+    store.areas = rows.map(tr=>{
+      const tds = tr.querySelectorAll('td');
+      return { area: tds[0].textContent.trim(), pj: tds[1].textContent.trim() };
+    });
+
+    // 2) simpan checklist utk current YM
+    const key = ymKey(currentYear, currentMonth);
+    store.checklists = store.checklists || {};
+    store.checklists[key] = rows.map(tr=>{
+      return [...tr.querySelectorAll('input[type="checkbox"]')].map(cb=>cb.checked);
+    });
+
+    // 3) simpan note utk current YM
+    store.notes = store.notes || {};
+    store.notes[key] = dom.note.textContent;
+
+    return store;
+  }
+
+  function saveNow(){
+    if(!isAdmin) return;
+    saveStore( collectToStore() );
+  }
+
+  /* ========= AUTOSAVE HANDLERS ========= */
+  const debouncedAnyEdit = debounce(saveNow, 300);
+  function onAnyEdit(){ saveNow(); }
+
+  /* ========= MODE ========= */
+  function applyMode(){
+    dom.modeInfo.textContent = isAdmin ? "Admin" : "View Only";
+    dom.note.contentEditable = isAdmin ? "true" : "false";
+    dom.addRow.style.display = isAdmin ? "inline-block" : "none";
+    dom.delRow.style.display = isAdmin ? "inline-block" : "none";
+
+    // toggle editability on existing cells & checkboxes
+    [...dom.tbody.querySelectorAll('tr')].forEach(tr=>{
+      const tds = tr.querySelectorAll('td');
+      tds[0].contentEditable = isAdmin;
+      tds[1].contentEditable = isAdmin;
+      tr.querySelectorAll('input[type="checkbox"]').forEach(cb=> cb.disabled = !isAdmin);
+    });
+  }
+
+  /* ========= ROW OPS ========= */
+  function addRow(){
+    const weeks = dom.thead.querySelectorAll('th').length - 2;
+    dom.tbody.appendChild( createRow("", "", [], weeks) );
+    saveNow(); // autosave setelah tambah
+  }
+  function delRow(){
+    const last = dom.tbody.lastElementChild;
+    if(last){
+      last.remove();
+      saveNow(); // autosave setelah hapus
+    }
+  }
+
+  /* ========= EVENTS ========= */
+  // catatan autosave
+  dom.note.addEventListener('input', debouncedAnyEdit);
+  dom.addRow.addEventListener('click', addRow);
+  dom.delRow.addEventListener('click', delRow);
+
+  // ganti bulan/tahun: admin disave dulu, lalu render target
+  dom.year.addEventListener('change', ()=>{
+    if(isAdmin) saveNow();
+    currentYear = parseInt(dom.year.value,10);
+    render(currentYear, currentMonth);
   });
-}
+  dom.month.addEventListener('change', ()=>{
+    if(isAdmin) saveNow();
+    currentMonth = parseInt(dom.month.value,10);
+    render(currentYear, currentMonth);
+  });
 
-const debouncedAnyEdit = debounce(saveNow, 300);
-function onAnyEdit(){ saveNow(); }
+  // auth
+  dom.loginBtn.addEventListener('click', ()=>{
+    const pass = dom.adminPass.value.trim();
+    if(pass === ADMIN_PASSWORD){
+      isAdmin = true;
+      applyMode();
+      dom.loginBtn.style.display="none";
+      dom.logoutBtn.style.display="inline-block";
+      dom.adminPass.style.display="none";
+      // autosave initial (sinkronisasi struktur)
+      saveNow();
+      alert("Login Admin sukses");
+    }else{
+      alert("Password salah");
+    }
+  });
 
-/* ================= UI Events ================= */
-// Tambah/Hapus baris — guard extra (kalau ada yang invoke via devtools)
-dom.addRow.addEventListener('click', ()=>{
-  if(!isAdmin) return;
-  const weeks = dom.thead.querySelectorAll('th').length - 2;
-  dom.tbody.appendChild( createRow("", "", [], weeks) );
-  saveNow();
-});
-dom.delRow.addEventListener('click', ()=>{
-  if(!isAdmin) return;
-  const last = dom.tbody.lastElementChild;
-  if(last){ last.remove(); saveNow(); }
-});
-
-// Catatan autosave
-dom.note.addEventListener('input', debouncedAnyEdit);
-
-// Ganti tahun/bulan: viewer boleh; admin autosave dulu lalu render
-dom.year.addEventListener('change', ()=>{
-  if(isAdmin) saveNow();
-  currentYear = parseInt(dom.year.value,10);
-  renderFromData(lastData); // render cepat dari cache; realtime onValue tetap jalan
-});
-dom.month.addEventListener('change', ()=>{
-  if(isAdmin) saveNow();
-  currentMonth = parseInt(dom.month.value,10);
-  renderFromData(lastData);
-});
-
-/* ================= Auth (Admin PIN) ================= */
-dom.loginBtn.addEventListener('click', ()=>{
-  const pass = dom.adminPass.value.trim();
-  if(pass === ADMIN_PASSWORD){
-    isAdmin = true;
+  dom.logoutBtn.addEventListener('click', ()=>{
+    // autosave saat logout
+    saveNow();
+    isAdmin = false;
     applyMode();
-    dom.loginBtn.style.display="none";
-    dom.logoutBtn.style.display="inline-block";
-    dom.adminPass.style.display="none";
-    saveNow(); // sinkron awal
-    alert("Login Admin sukses");
-  }else{
-    alert("Password salah");
-  }
-});
-dom.logoutBtn.addEventListener('click', ()=>{
-  saveNow(); // autosave ketika logout
-  isAdmin = false;
-  applyMode();
-  dom.loginBtn.style.display="inline-block";
-  dom.logoutBtn.style.display="none";
-  dom.adminPass.style.display="inline-block";
-  dom.adminPass.value="";
-});
-
-/* ================= Init selectors & first paint ================= */
-(function initSelectors(){
-  const nowY = new Date().getFullYear();
-  for(let y=nowY-5; y<=nowY+7; y++){
-    const o = document.createElement('option');
-    o.value = y; o.textContent = y;
-    dom.year.appendChild(o);
-  }
-  dom.year.value = currentYear;
-
-  months.forEach((m,i)=>{
-    const o = document.createElement('option');
-    o.value = i; o.textContent = m;
-    dom.month.appendChild(o);
+    dom.loginBtn.style.display="inline-block";
+    dom.logoutBtn.style.display="none";
+    dom.adminPass.style.display="inline-block";
+    dom.adminPass.value="";
   });
-  dom.month.value = currentMonth;
 
-  // Tampilkan struktur awal agar tidak kosong sebelum data realtime datang
-  buildHead(getWeeksCount(currentYear, currentMonth));
-  // Jika database masih kosong, tulis struktur minimal 1x (hanya saat admin login pertama kali akan menyimpan).
+  /* ========= UTILS ========= */
+  function debounce(fn, ms){
+    let t; return function(...args){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,args), ms); };
+  }
+
+  /* ========= INIT ========= */
+  initSelectors();
+  render(currentYear, currentMonth);
+  applyMode(); // default viewer
 })();
 </script>
-
 </body>
 </html>

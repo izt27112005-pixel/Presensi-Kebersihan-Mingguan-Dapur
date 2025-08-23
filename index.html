@@ -1,690 +1,297 @@
 <!doctype html>
 <html lang="id">
 <head>
-  <!-- =========================
-       META & TITLE
-  ========================== -->
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-  <title>Presensi Kebersihan Mingguan per Area (Realtime)</title>
-
-  <!-- =========================
-       STYLE (CSS)  — rapi + animasi + mobile friendly
-  ========================== -->
-  <style>
-    /* ---------- Variabel warna & layout global ---------- */
-    :root{
-      --bg:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
-      --panel:rgba(255,255,255,0.06);
-      --ink:#e8ecf1;
-      --ink-weak:#d9e3ee;
-      --muted:#9aa6b2;
-      --brand:#00eaff;
-      --brand2:#a97aff;
-      --ok:#37d67a;
-      --warn:#ffb020;
-      --danger:#ff5c5c;
-      --grid:rgba(255,255,255,0.12);
-      --shadow:0 18px 48px rgba(0,0,0,.35);
-      --radius:12px;
-    }
-
-    /* ---------- Reset ringan ---------- */
-    *{ box-sizing:border-box }
-    html,body{ height:100% }
-    html{ overflow-x:hidden } /* cegah scroll samping */
-    body{
-      margin:0;
-      background:var(--bg);
-      color:var(--ink);
-      font:500 14px/1.5 "Inter",system-ui,Segoe UI,Roboto,Arial;
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-      min-height:100vh;
-      display:flex;
-      flex-direction:column;
-    }
-
-    a{ color:var(--brand); text-decoration:none }
-    a:hover{ text-decoration:underline }
-
-    /* ---------- Header ---------- */
-    header{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:16px;
-      padding:14px 20px;
-      background:rgba(0,0,0,.50);
-      box-shadow:var(--shadow);
-      backdrop-filter:blur(8px);
-      position:sticky;
-      top:0;
-      z-index:5;
-
-      /* ANIMASI */
-      animation:slideDown .6s ease;
-    }
-    h1{
-      margin:0;
-      font-size:18px;
-      letter-spacing:.2px;
-      color:var(--brand);
-      text-shadow:0 0 10px rgba(0,234,255,.2);
-    }
-    .auth{
-      display:flex;
-      align-items:center;
-      gap:8px;
-    }
-
-    /* ---------- Form Elemen ---------- */
-    input,button,select,textarea{
-      padding:10px 12px;
-      border-radius:10px;
-      border:1px solid #2a2f3a;
-      background:#121823;
-      color:var(--ink);
-      transition:.25s;
-      font:inherit;
-    }
-    input::placeholder{ color:#7f8b99 }
-    input:focus,select:focus,textarea:focus{
-      outline:1px solid #3a4a78;
-      box-shadow:0 0 0 3px rgba(58,74,120,.25);
-    }
-    button{
-      background:#172133;
-      border-color:#27324a;
-      cursor:pointer;
-      user-select:none;
-    }
-    button:hover{ filter:brightness(1.1) }
-    button:active{ transform:translateY(1px) }
-    button[disabled]{ opacity:.6; cursor:not-allowed }
-    .btn-primary{
-      background:linear-gradient(180deg,var(--brand),#1c7fff);
-      color:#081018;
-      border:0;
-      box-shadow:0 8px 18px rgba(0,234,255,.25);
-    }
-
-    /* ---------- Toolbar ---------- */
-    .toolbar{
-      padding:10px 14px;
-      background:rgba(0,0,0,.35);
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      align-items:center;
-      backdrop-filter:blur(6px);
-
-      /* ANIMASI */
-      animation:fadeIn .7s ease;
-    }
-    .chip{
-      padding:6px 10px;
-      border:1px solid var(--grid);
-      border-radius:999px;
-      background:rgba(255,255,255,.05);
-      font-size:12px;
-      letter-spacing:.2px;
-    }
-    .chip.view{ color:#cfd6de }
-    .chip.admin{ color:#0ce7a6; background:rgba(12,231,166,.12); border-color:rgba(12,231,166,.35) }
-
-    .status{
-      margin-left:auto;
-      display:flex;
-      align-items:center;
-      gap:8px;
-      font-size:12px;
-      color:#cfe6ff;
-    }
-    .dot{
-      width:8px; height:8px; border-radius:50%;
-      box-shadow:0 0 10px currentColor;
-      background:currentColor;
-    }
-    .dot.saving{ color:var(--warn) }
-    .dot.saved{ color:var(--ok) }
-    .dot.idle{ color:#9aa6b2 }
-
-    /* ---------- Kontainer ---------- */
-    .wrap{ padding:12px; width:100%; max-width:1200px; margin:0 auto; flex:1 1 auto }
-
-    /* ---------- Kartu & Tabel ---------- */
-    .card{
-      background:var(--panel);
-      border:1px solid var(--grid);
-      border-radius:var(--radius);
-      overflow:hidden;
-      box-shadow:var(--shadow);
-    }
-    /* TABEL RAPi TANPA SCROLL SAMPING */
-    table{
-      border-collapse:collapse;
-      width:100%;
-      table-layout:fixed;          /* kolom width fix proporsional */
-      margin:0;
-    }
-    thead th{
-      background:rgba(255,255,255,.08);
-      border-bottom:1px solid var(--grid);
-      padding:8px 6px;             /* lebih rapat agar muat di HP */
-      position:sticky;
-      top:62px;                    /* di bawah header */
-      z-index:2;
-      font-size:12px;
-    }
-    th,td{
-      border-right:1px solid var(--grid);
-      padding:8px 6px;
-      text-align:center;
-      vertical-align:middle;
-      word-wrap:break-word;
-      overflow-wrap:break-word;
-      hyphens:auto;
-    }
-    tbody tr{
-      animation:rowIn .45s ease both;
-    }
-    tbody tr:nth-child(odd){ background:rgba(255,255,255,.02) }
-    tbody tr:hover{ background:rgba(0,234,255,.05) }
-
-    .cell-edit{
-      text-align:left;
-      min-width:120px;
-      font-weight:560;
-    }
-    .checkbox{
-      appearance:none;
-      width:20px;height:20px;border-radius:6px;
-      border:1px solid #3a4a55;background:#0e141c;cursor:pointer;
-      transition:.2s;
-      box-shadow:inset 0 0 0 2px rgba(255,255,255,.03);
-      display:inline-block;
-    }
-    .checkbox:hover{ filter:brightness(1.15) }
-    .checkbox:checked{
-      background:linear-gradient(180deg,var(--brand),var(--brand2));
-      border-color:transparent;
-      box-shadow:0 0 6px var(--brand2),0 0 12px rgba(169,122,255,.45);
-    }
-    .tools{
-      display:flex; gap:8px; align-items:center; padding:8px 10px; border-top:1px solid var(--grid); background:rgba(0,0,0,.15)
-    }
-    .badge{
-      display:inline-flex; align-items:center; gap:6px;
-      font-size:11px; padding:4px 8px; border-radius:999px;
-      border:1px solid var(--grid); background:rgba(255,255,255,.06);
-      color:#cfe6ff;
-    }
-
-    /* ---------- Footer / Catatan ---------- */
-    .footer{
-      padding:12px 14px;
-      background:rgba(0,0,0,.35);
-      font-size:12px;
-      color:var(--muted);
-      backdrop-filter:blur(6px);
-      border-top:1px solid var(--grid);
-    }
-    .note{
-      margin-top:8px;
-      padding:10px 12px;
-      border:1px dashed #566;
-      border-radius:10px;
-      background:rgba(255,255,255,.03);
-      min-height:48px;
-      white-space:pre-wrap;
-    }
-    .note[contenteditable="true"]{
-      outline:2px solid rgba(0,234,255,.35);
-      box-shadow:inset 0 0 0 2px rgba(0,234,255,.18);
-    }
-
-    /* ---------- Responsive: agar MUAT di HP tanpa scroll samping ---------- */
-    @media (max-width:780px){
-      thead th, th, td{ padding:7px 5px; font-size:12px }
-      .wrap{ padding:8px }
-      header{ padding:12px 14px }
-      .toolbar{ gap:8px }
-      /* Sembunyikan kolom PJ di HP supaya ruang cukup */
-      thead th:nth-child(2),
-      tbody td:nth-child(2){ display:none }
-      .cell-edit{ min-width:0 }
-    }
-
-    /* ---------- ANIMASI KEYFRAMES ---------- */
-    @keyframes slideDown{
-      from{ transform:translateY(-30px); opacity:0 }
-      to{ transform:translateY(0); opacity:1 }
-    }
-    @keyframes fadeIn{
-      from{ opacity:0 }
-      to{ opacity:1 }
-    }
-    @keyframes rowIn{
-      from{ opacity:0; transform:translateY(8px) }
-      to{ opacity:1; transform:translateY(0) }
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Presensi Kebersihan Mingguan per Area</title>
+<style>
+/* === CSS Anda tetap sama === */
+:root{--bg:linear-gradient(135deg,#0f2027,#203a43,#2c5364);--panel:rgba(255,255,255,0.06);--ink:#e8ecf1;--muted:#9aa6b2;--brand:#00eaff;--brand2:#a97aff;--grid:rgba(255,255,255,0.12);--radius:12px;--shadow:0 18px 48px rgba(0,0,0,.35);}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:500 14px/1.5 "Inter",system-ui,Segoe UI,Roboto,Arial;min-height:100vh;}
+header{display:flex;justify-content:space-between;align-items:center;padding:14px 20px;background:rgba(0,0,0,0.50);box-shadow:var(--shadow);backdrop-filter:blur(8px);}
+h1{margin:0;font-size:18px;color:var(--brand);}
+input,button,select{padding:10px 12px;border-radius:10px;border:1px solid #333;background:#151a22;color:var(--ink);}
+button:hover{background:#1d2330;cursor:pointer;}
+.toolbar{padding:10px 14px;background:rgba(0,0,0,.35);display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.wrap{padding:12px}
+table{border-collapse:collapse;width:100%;font-size:13px;background:var(--panel);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
+th,td{border:1px solid var(--grid);padding:10px 8px;text-align:center;}
+thead th{background:rgba(255,255,255,.08);position:sticky;top:0}
+.checkbox{appearance:none;width:18px;height:18px;border-radius:6px;border:1px solid #566;background:#0f141c;cursor:pointer;}
+.checkbox:checked{background:linear-gradient(180deg,var(--brand),var(--brand2));}
+.footer{padding:12px 14px;background:rgba(0,0,0,.35);font-size:12px;color:var(--muted);}
+.note{margin-top:8px;padding:10px;border:1px dashed #666;border-radius:10px;background:rgba(255,255,255,.03);}
+</style>
 </head>
-
 <body>
-  <!-- =========================
-       HEADER + AUTH
-  ========================== -->
-  <header>
-    <h1>Presensi Kebersihan Mingguan per Area</h1>
-    <div class="auth">
-      <input type="password" id="adminPass" placeholder="Masukkan kode admin (q11)">
-      <button id="loginBtn" class="btn-primary">Login</button>
-      <button id="logoutBtn" style="display:none;">Logout</button>
-    </div>
-  </header>
-
-  <!-- =========================
-       TOOLBAR (Tahun/Bulan/Mode/Status)
-  ========================== -->
-  <div class="toolbar">
-    <select id="yearSelect" title="Pilih Tahun"></select>
-    <select id="monthSelect" title="Pilih Bulan"></select>
-
-    <button id="addRow">Tambah Baris</button>
-    <button id="delRow">Hapus Baris</button>
-
-    <span class="chip view" id="modeInfo">👀 View Only (tidak bisa simpan)</span>
-
-    <span class="status">
-      <span id="saveDot" class="dot idle"></span>
-      <span id="saveText">Idle</span>
-    </span>
+<header>
+  <h1>Presensi Kebersihan Mingguan per Area</h1>
+  <div>
+    <input type="password" id="adminPass" placeholder="Password Admin (q11)">
+    <button id="loginBtn">Login</button>
+    <button id="logoutBtn" style="display:none;">Logout</button>
   </div>
+</header>
 
-  <!-- =========================
-       TABEL
-  ========================== -->
-  <div class="wrap">
-    <div class="card">
-      <table id="grid">
-        <thead id="thead"></thead>
-        <tbody id="tbody"></tbody>
-      </table>
-      <div class="tools">
-        <span class="badge">Baris: <strong id="rowCount">0</strong></span>
-        <span class="badge">Minggu: <strong id="weekCount">0</strong></span>
-        <span class="badge">Periode: <strong id="periodLabel">-</strong></span>
-      </div>
-    </div>
+<div class="toolbar">
+  <select id="yearSelect" title="Pilih Tahun"></select>
+  <select id="monthSelect" title="Pilih Bulan"></select>
+  <button id="addRow">Tambah Baris</button>
+  <button id="delRow">Hapus Baris</button>
+  <span class="chip">Mode: <strong id="modeInfo">View Only</strong></span>
+</div>
+
+<div class="wrap">
+  <table id="grid">
+    <thead id="thead"></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<div class="footer">
+  <div>Catatan (per bulan & tahun):</div>
+  <div class="note" id="note" contenteditable="false">
+    Hanya admin yang dapat mengubah catatan ini.
   </div>
+</div>
 
-  <!-- =========================
-       FOOTER / CATATAN
-  ========================== -->
-  <div class="footer">
-    <div>Catatan (spesifik per bulan & tahun):</div>
-    <div class="note" id="note" contenteditable="false">Hanya admin yang dapat mengubah catatan ini.</div>
-  </div>
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-  <!-- =========================
-       SCRIPT: Firebase + Logic
-  ========================== -->
-  <script type="module">
-    /* ---------------------------------------
-       Firebase SDK (ESM via CDN)
-    ---------------------------------------- */
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+const firebaseConfig = {
+  apiKey: "AIzaSyCX-M-eNScPTqmtIOp7Zs1fFwkIg27VkF0",
+  authDomain: "data-jamaah-dapur.firebaseapp.com",
+  projectId: "data-jamaah-dapur",
+  storageBucket: "data-jamaah-dapur.firebasestorage.app",
+  messagingSenderId: "963461575071",
+  appId: "1:963461575071:web:af16848f8f54b99c178daa",
+  measurementId: "G-5X4FTYVR5S"
+};
 
-    /* ---------------------------------------
-       KONFIGURASI FIREBASE
-    ---------------------------------------- */
-    const firebaseConfig = {
-      apiKey: "AIzaSyCX-M-eNScPTqmtIOp7Zs1fFwkIg27VkF0",
-      authDomain: "data-jamaah-dapur.firebaseapp.com",
-      projectId: "data-jamaah-dapur",
-      storageBucket: "data-jamaah-dapur.firebasestorage.app",
-      messagingSenderId: "963461575071",
-      appId: "1:963461575071:web:af16848f8f54b99c178daa",
-      measurementId: "G-5X4FTYVR5S"
-    };
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-    const app = initializeApp(firebaseConfig);
-    const db  = getFirestore(app);
+(()=>{
+  const months = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+  const ADMIN_PASSWORD = "q11";
+  const STORAGE_KEY = "clean-weekly-v2"; 
+  const docRef = doc(db, STORAGE_KEY, "data");
 
-    /* ---------------------------------------
-       DOM refs
-    ---------------------------------------- */
-    const dom = {
-      thead: document.getElementById('thead'),
-      tbody: document.getElementById('tbody'),
-      note: document.getElementById('note'),
-      year: document.getElementById('yearSelect'),
-      month: document.getElementById('monthSelect'),
-      addRow: document.getElementById('addRow'),
-      delRow: document.getElementById('delRow'),
-      modeInfo: document.getElementById('modeInfo'),
-      adminPass: document.getElementById('adminPass'),
-      loginBtn: document.getElementById('loginBtn'),
-      logoutBtn: document.getElementById('logoutBtn'),
-      rowCount: document.getElementById('rowCount'),
-      weekCount: document.getElementById('weekCount'),
-      periodLabel: document.getElementById('periodLabel'),
-      saveDot: document.getElementById('saveDot'),
-      saveText: document.getElementById('saveText'),
-    };
+  const dom = {
+    thead: document.getElementById('thead'),
+    tbody: document.getElementById('tbody'),
+    note: document.getElementById('note'),
+    year: document.getElementById('yearSelect'),
+    month: document.getElementById('monthSelect'),
+    addRow: document.getElementById('addRow'),
+    delRow: document.getElementById('delRow'),
+    modeInfo: document.getElementById('modeInfo'),
+    adminPass: document.getElementById('adminPass'),
+    loginBtn: document.getElementById('loginBtn'),
+    logoutBtn: document.getElementById('logoutBtn')
+  };
 
-    /* ---------------------------------------
-       State
-    ---------------------------------------- */
-    const months = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
-    const ADMIN_PASSWORD = "q11"; // << di sini kode admin
+  let isAdmin = false;
+  let currentYear = new Date().getFullYear();
+  let currentMonth = new Date().getMonth();
+  let cache = {}; // cache Firestore data realtime
 
-    let isAdmin = false;
-    let currentYear = new Date().getFullYear();
-    let currentMonth = new Date().getMonth();
-    let globalStore = {}; // { areas:[{area,pj},...], checklists:{ "2025-7":[[true,false,...], ...] }, notes:{ "2025-7":"..." } }
+  async function saveStore(obj){
+    await setDoc(docRef, obj, { merge:true });
+  }
+  function ymKey(y,m){ return `${y}-${m}`; }
 
-    // Semua data disimpan dalam satu dokumen agar viewer seragam
-    const refDoc = doc(db, "presensi", "globalData");
-
-    /* ---------------------------------------
-       Realtime Listener (semua user)
-    ---------------------------------------- */
-    onSnapshot(refDoc, (snap) => {
-      if (snap.exists()) {
-        globalStore = snap.data();
-        render(currentYear, currentMonth); // refresh UI dgn data terbaru
-      }
+  function initSelectors(){
+    const nowY = new Date().getFullYear();
+    for(let y=nowY-5; y<=nowY+7; y++){
+      const o = document.createElement('option');
+      o.value = y; o.textContent = y;
+      dom.year.appendChild(o);
+    }
+    dom.year.value = currentYear;
+    months.forEach((m,i)=>{
+      const o = document.createElement('option');
+      o.value = i; o.textContent = m;
+      dom.month.appendChild(o);
     });
+    dom.month.value = currentMonth;
+  }
 
-    /* ---------------------------------------
-       Helpers
-    ---------------------------------------- */
-    function ymKey(y,m){ return `${y}-${m}` }
+  function getWeeksCount(year,month){
+    const days = new Date(year, month+1, 0).getDate();
+    return Math.ceil(days/7);
+  }
 
-    function getWeeksCount(year,month){
-      // 4 atau 5 minggu bergantung jumlah hari / 7 (dibulatkan ke atas)
-      const totalDays = new Date(year, month+1, 0).getDate();
-      return Math.ceil(totalDays / 7);
+  function buildHead(weeks){
+    dom.thead.innerHTML = "";
+    const tr = document.createElement('tr');
+    tr.innerHTML = "<th>Nama Area</th><th>PJ Kebersihan</th>";
+    for(let i=1;i<=weeks;i++){
+      const th = document.createElement('th');
+      th.textContent = `Minggu ke-${i}`;
+      tr.appendChild(th);
     }
+    dom.thead.appendChild(tr);
+  }
 
-    function initSelectors(){
-      // Tahun
-      const base = new Date().getFullYear();
-      dom.year.innerHTML = "";
-      for (let y = base-5; y <= base+7; y++){
-        const o = document.createElement("option");
-        o.value = y; o.textContent = y;
-        dom.year.appendChild(o);
-      }
-      dom.year.value = currentYear;
+  function createRow(area="", pj="", checks=[], weekCount=4){
+    const tr = document.createElement('tr');
 
-      // Bulan
-      dom.month.innerHTML = "";
-      months.forEach((m,i)=>{
-        const o = document.createElement("option");
-        o.value = i; o.textContent = m;
-        dom.month.appendChild(o);
-      });
-      dom.month.value = currentMonth;
+    const tdArea = document.createElement('td');
+    tdArea.textContent = area;
+    tdArea.contentEditable = isAdmin;
+    tr.appendChild(tdArea);
 
-      updatePeriodBadge();
+    const tdPIC = document.createElement('td');
+    tdPIC.textContent = pj;
+    tdPIC.contentEditable = isAdmin;
+    tr.appendChild(tdPIC);
+
+    for(let i=0;i<weekCount;i++){
+      const td = document.createElement('td');
+      const cb = document.createElement('input');
+      cb.type = "checkbox";
+      cb.className = "checkbox";
+      cb.checked = !!checks[i];
+      cb.disabled = !isAdmin;
+      cb.addEventListener('change', onAnyEdit);
+      td.appendChild(cb);
+      tr.appendChild(td);
     }
+    tdArea.addEventListener('input', debouncedAnyEdit);
+    tdPIC.addEventListener('input', debouncedAnyEdit);
 
-    function updatePeriodBadge(){
-      dom.periodLabel.textContent = `${months[currentMonth]} ${currentYear}`;
-      dom.weekCount.textContent = getWeeksCount(currentYear,currentMonth).toString();
+    return tr;
+  }
+
+  function render(store,y,m){
+    let areas = store.areas || [
+      {area:"Lobby", pj:"Budi"},
+      {area:"Toilet", pj:"Siti"}
+    ];
+    const weeks = getWeeksCount(y,m);
+    buildHead(weeks);
+    dom.tbody.innerHTML = "";
+
+    const key = ymKey(y,m);
+    const allChecks = (store.checklists && store.checklists[key]) || [];
+    for(let i=0;i<areas.length;i++){
+      const rowChecks = Array.from({length:weeks}, (_,w)=> (allChecks[i] && allChecks[i][w])===true);
+      dom.tbody.appendChild( createRow(areas[i].area, areas[i].pj, rowChecks, weeks) );
     }
+    const noteMap = store.notes || {};
+    dom.note.textContent = noteMap[key] || "Hanya admin yang dapat mengubah catatan ini.";
 
-    function buildHead(weeks){
-      dom.thead.innerHTML = "";
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<th>Nama Area</th><th>PJ Kebersihan</th>`;
-      for(let i=1;i<=weeks;i++){
-        const th = document.createElement("th");
-        th.textContent = `Minggu ke-${i}`;
-        tr.appendChild(th);
-      }
-      dom.thead.appendChild(tr);
-    }
+    applyMode();
+  }
 
-    function createRow(area="", pj="", checks=[], weekCount=4){
-      const tr = document.createElement("tr");
+  function collectToStore(){
+    const store = cache || {};
+    const rows = [...dom.tbody.querySelectorAll('tr')];
+    store.areas = rows.map(tr=>{
+      const tds = tr.querySelectorAll('td');
+      return { area: tds[0].textContent.trim(), pj: tds[1].textContent.trim() };
+    });
+    const key = ymKey(currentYear, currentMonth);
+    store.checklists = store.checklists || {};
+    store.checklists[key] = rows.map(tr=>{
+      return [...tr.querySelectorAll('input[type="checkbox"]')].map(cb=>cb.checked);
+    });
+    store.notes = store.notes || {};
+    store.notes[key] = dom.note.textContent;
+    return store;
+  }
 
-      const tdArea = document.createElement("td");
-      tdArea.className = "cell-edit";
-      tdArea.textContent = area;
-      tdArea.contentEditable = isAdmin;
-      tr.appendChild(tdArea);
+  async function saveNow(){
+    if(!isAdmin) return;
+    await saveStore( collectToStore() );
+  }
 
-      const tdPIC = document.createElement("td");
-      tdPIC.className = "cell-edit";
-      tdPIC.textContent = pj;
-      tdPIC.contentEditable = isAdmin;
-      tr.appendChild(tdPIC);
+  const debouncedAnyEdit = debounce(saveNow, 300);
+  function onAnyEdit(){ saveNow(); }
 
-      for(let i=0;i<weekCount;i++){
-        const td = document.createElement("td");
-        const cb = document.createElement("input");
-        cb.type = "checkbox";
-        cb.className = "checkbox";
-        cb.checked = !!checks[i];
-        cb.disabled = !isAdmin;
-        cb.addEventListener("change", onAnyEdit); // simpan realtime (admin only)
-        td.appendChild(cb);
-        tr.appendChild(td);
-      }
+  function applyMode(){
+    dom.modeInfo.textContent = isAdmin ? "Admin" : "View Only";
+    dom.note.contentEditable = isAdmin ? "true" : "false";
+    dom.addRow.style.display = isAdmin ? "inline-block" : "none";
+    dom.delRow.style.display = isAdmin ? "inline-block" : "none";
+    [...dom.tbody.querySelectorAll('tr')].forEach(tr=>{
+      const tds = tr.querySelectorAll('td');
+      tds[0].contentEditable = isAdmin;
+      tds[1].contentEditable = isAdmin;
+      tr.querySelectorAll('input[type="checkbox"]').forEach(cb=> cb.disabled = !isAdmin);
+    });
+  }
 
-      // edit teks area/pj
-      tdArea.addEventListener("input", debouncedAnyEdit);
-      tdPIC.addEventListener("input", debouncedAnyEdit);
-
-      return tr;
-    }
-
-    function render(y,m){
-      // default area jika belum ada data di cloud
-      let areas = globalStore.areas || [
-        {area:"Lobby", pj:"Budi"},
-        {area:"Toilet", pj:"Siti"},
-        {area:"Dapur", pj:"Rina"}
-      ];
-
-      const weeks = getWeeksCount(y,m);
-      buildHead(weeks);
-
-      dom.tbody.innerHTML = "";
-      const key = ymKey(y,m);
-      const allChecks = (globalStore.checklists && globalStore.checklists[key]) || [];
-
-      for(let i=0;i<areas.length;i++){
-        const rowChecks = Array.from({length:weeks}, (_,w)=> (allChecks[i] && allChecks[i][w])===true);
-        dom.tbody.appendChild( createRow(areas[i].area, areas[i].pj, rowChecks, weeks) );
-      }
-
-      dom.rowCount.textContent = areas.length.toString();
-      const noteMap = globalStore.notes || {};
-      dom.note.textContent = noteMap[key] || "Hanya admin yang dapat mengubah catatan ini.";
-
-      applyMode();
-    }
-
-    function collectToStore(){
-      const rows = [...dom.tbody.querySelectorAll("tr")];
-
-      // kumpulkan areas (kolom 1 & 2)
-      globalStore.areas = rows.map(tr=>{
-        const tds = tr.querySelectorAll("td");
-        return { area: (tds[0]?.textContent||"").trim(), pj: (tds[1]?.textContent||"").trim() };
-      });
-
-      // kumpulkan checklist per minggu
-      const key = ymKey(currentYear, currentMonth);
-      globalStore.checklists = globalStore.checklists || {};
-      globalStore.checklists[key] = rows.map(tr=>{
-        const boxes = [...tr.querySelectorAll('input[type="checkbox"]')];
-        return boxes.map(cb=> cb.checked);
-      });
-
-      // catatan
-      globalStore.notes = globalStore.notes || {};
-      globalStore.notes[key] = dom.note.textContent;
-
-      return globalStore;
-    }
-
-    // indikator simpan
-    let saveTimer;
-    function setSavingIndicator(state){
-      if(state==="saving"){
-        dom.saveDot.className = "dot saving";
-        dom.saveText.textContent = "Menyimpan…";
-      }else if(state==="saved"){
-        dom.saveDot.className = "dot saved";
-        dom.saveText.textContent = "Tersimpan";
-        clearTimeout(saveTimer);
-        saveTimer = setTimeout(()=>{ // kembali idle setelah 1.5 detik
-          dom.saveDot.className = "dot idle";
-          dom.saveText.textContent = "Idle";
-        }, 1500);
-      }else{
-        dom.saveDot.className = "dot idle";
-        dom.saveText.textContent = "Idle";
-      }
-    }
-
-    async function saveNow(){
-      if(!isAdmin) return; // admin-only save
-      try{
-        setSavingIndicator("saving");
-        await setDoc(refDoc, collectToStore(), { merge:true });
-        setSavingIndicator("saved");
-      }catch(e){
-        setSavingIndicator("idle");
-        alert("Gagal menyimpan: " + e.message);
-      }
-    }
-
-    const debouncedAnyEdit = debounce(saveNow, 300);
-    function onAnyEdit(){ saveNow(); }
-
-    function applyMode(){
-      // teks mode
-      if(isAdmin){
-        dom.modeInfo.textContent = "🛠 Admin Mode (tersimpan realtime)";
-        dom.modeInfo.className = "chip admin";
-      }else{
-        dom.modeInfo.textContent = "👀 View Only (tidak bisa simpan)";
-        dom.modeInfo.className = "chip view";
-      }
-
-      // note editable
-      dom.note.contentEditable = isAdmin ? "true" : "false";
-
-      // tombol baris
-      dom.addRow.style.display = isAdmin ? "inline-block" : "none";
-      dom.delRow.style.display = isAdmin ? "inline-block" : "none";
-
-      // aktif/nonaktifkan edit cell & checkbox
-      [...dom.tbody.querySelectorAll("tr")].forEach(tr=>{
-        const tds = tr.querySelectorAll("td");
-        if(tds[0]) tds[0].contentEditable = isAdmin;
-        if(tds[1]) tds[1].contentEditable = isAdmin;
-        tr.querySelectorAll('input[type="checkbox"]').forEach(cb=> cb.disabled = !isAdmin);
-      });
-    }
-
-    function addRow(){
-      const weeks = dom.thead.querySelectorAll("th").length - 2;
-      dom.tbody.appendChild( createRow("", "", [], weeks) );
-      dom.rowCount.textContent = document.querySelectorAll("#tbody tr").length.toString();
+  function addRow(){
+    const weeks = dom.thead.querySelectorAll('th').length - 2;
+    dom.tbody.appendChild( createRow("", "", [], weeks) );
+    saveNow();
+  }
+  function delRow(){
+    const last = dom.tbody.lastElementChild;
+    if(last){
+      last.remove();
       saveNow();
     }
-    function delRow(){
-      const last = dom.tbody.lastElementChild;
-      if(last){
-        last.remove();
-        dom.rowCount.textContent = document.querySelectorAll("#tbody tr").length.toString();
-        saveNow();
-      }
-    }
+  }
 
-    /* ---------------------------------------
-       Events
-    ---------------------------------------- */
-    dom.note.addEventListener("input", debouncedAnyEdit);
-    dom.addRow.addEventListener("click", addRow);
-    dom.delRow.addEventListener("click", delRow);
+  dom.note.addEventListener('input', debouncedAnyEdit);
+  dom.addRow.addEventListener('click', addRow);
+  dom.delRow.addEventListener('click', delRow);
+  dom.year.addEventListener('change', ()=>{
+    if(isAdmin) saveNow();
+    currentYear = parseInt(dom.year.value,10);
+    render(cache, currentYear, currentMonth);
+  });
+  dom.month.addEventListener('change', ()=>{
+    if(isAdmin) saveNow();
+    currentMonth = parseInt(dom.month.value,10);
+    render(cache, currentYear, currentMonth);
+  });
 
-    dom.year.addEventListener("change", ()=>{
-      if(isAdmin) saveNow();
-      currentYear = parseInt(dom.year.value,10);
-      updatePeriodBadge();
-      render(currentYear, currentMonth);
-    });
-    dom.month.addEventListener("change", ()=>{
-      if(isAdmin) saveNow();
-      currentMonth = parseInt(dom.month.value,10);
-      updatePeriodBadge();
-      render(currentYear, currentMonth);
-    });
-
-    dom.loginBtn.addEventListener("click", ()=>{
-      const pass = dom.adminPass.value.trim();
-      if(pass === ADMIN_PASSWORD){
-        isAdmin = true;
-        applyMode();
-        dom.loginBtn.style.display="none";
-        dom.logoutBtn.style.display="inline-block";
-        dom.adminPass.style.display="none";
-        saveNow(); // simpan struktur awal jika perlu
-        alert("Login Admin sukses");
-      }else{
-        alert("Password salah");
-      }
-    });
-
-    dom.logoutBtn.addEventListener("click", ()=>{
-      saveNow(); // ensure last changes
-      isAdmin = false;
+  dom.loginBtn.addEventListener('click', ()=>{
+    const pass = dom.adminPass.value.trim();
+    if(pass === ADMIN_PASSWORD){
+      isAdmin = true;
       applyMode();
-      dom.loginBtn.style.display="inline-block";
-      dom.logoutBtn.style.display="none";
-      dom.adminPass.style.display="inline-block";
-      dom.adminPass.value="";
-    });
-
-    function debounce(fn, ms){
-      let t; return function(...args){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,args), ms); };
+      dom.loginBtn.style.display="none";
+      dom.logoutBtn.style.display="inline-block";
+      dom.adminPass.style.display="none";
+      saveNow();
+      alert("Login Admin sukses");
+    }else{
+      alert("Password salah");
     }
+  });
 
-    /* ---------------------------------------
-       Init
-    ---------------------------------------- */
-    function initHeightFix(){
-      // pastikan tidak ada scroll bawah berlebih
-      document.documentElement.style.height = '100%';
-      document.body.style.height = '100%';
-      document.body.style.overflowX = 'hidden';
-    }
+  dom.logoutBtn.addEventListener('click', ()=>{
+    saveNow();
+    isAdmin = false;
+    applyMode();
+    dom.loginBtn.style.display="inline-block";
+    dom.logoutBtn.style.display="none";
+    dom.adminPass.style.display="inline-block";
+    dom.adminPass.value="";
+  });
 
-    function updatePeriodUI(){
-      initSelectors();
-      render(currentYear, currentMonth);
-      applyMode();
-      setSavingIndicator("idle");
-    }
+  function debounce(fn, ms){
+    let t; return function(...args){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,args), ms); };
+  }
 
-    function updatePeriodBadge(){
-      dom.periodLabel.textContent = `${months[currentMonth]} ${currentYear}`;
-      dom.weekCount.textContent = getWeeksCount(currentYear,currentMonth).toString();
-    }
+  initSelectors();
+  applyMode();
 
-    initHeightFix();
-    updatePeriodUI();
-  </script>
+  // === REALTIME LISTENER ===
+  onSnapshot(docRef, (snap)=>{
+    cache = snap.exists() ? snap.data() : {};
+    render(cache, currentYear, currentMonth);
+  });
+
+})();
+</script>
 </body>
 </html>

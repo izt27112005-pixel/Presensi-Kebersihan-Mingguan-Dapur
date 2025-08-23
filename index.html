@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Presensi Kebersihan Mingguan per Area</title>
+<title>Presensi Kebersihan Mingguan</title>
 <style>
 :root{
   --bg:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
@@ -18,77 +18,32 @@
 body{margin:0;background:var(--bg);color:var(--ink);
      font:500 14px/1.5 "Inter",system-ui,Segoe UI,Roboto,Arial;min-height:100vh;}
 
-header{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:14px 20px;background:rgba(0,0,0,0.50);
-  box-shadow:var(--shadow);backdrop-filter:blur(8px);
-}
-h1{margin:0;font-size:18px;color:var(--brand);letter-spacing:.3px}
-
-input,button,select{
-  padding:10px 12px;border-radius:10px;border:1px solid #333;
-  background:#151a22;color:var(--ink);transition:.25s;
-}
-button:hover{background:#1d2330;cursor:pointer;
-  box-shadow:0 0 8px var(--brand2),0 0 14px var(--brand)}
-select:hover, input:focus{outline:1px solid #3a4a78}
-
-.toolbar{
-  padding:10px 14px;background:rgba(0,0,0,.35);
-  display:flex;gap:10px;flex-wrap:wrap;align-items:center;
-  backdrop-filter:blur(6px);
-}
-.toolbar .chip{
-  padding:6px 10px;border:1px solid var(--grid);border-radius:999px;
-  background:rgba(255,255,255,.06);font-size:12px;color:#cfe6ff
-}
-
+header{display:flex;justify-content:space-between;align-items:center;
+  padding:14px 20px;background:rgba(0,0,0,0.50);box-shadow:var(--shadow);}
+h1{margin:0;font-size:18px;color:var(--brand);}
+input,button,select{padding:10px 12px;border-radius:10px;border:1px solid #333;
+  background:#151a22;color:var(--ink);}
+button:hover{background:#1d2330;cursor:pointer;}
+.toolbar{padding:10px;background:rgba(0,0,0,.35);display:flex;gap:10px;flex-wrap:wrap;}
+.toolbar .chip{padding:6px 10px;border:1px solid var(--grid);border-radius:999px;
+  background:rgba(255,255,255,.06);font-size:12px;color:#cfe6ff}
 .wrap{padding:12px}
-table{
-  border-collapse:collapse;width:100%;font-size:13px;background:var(--panel);
-  border-radius:14px;overflow:hidden;box-shadow:var(--shadow)
-}
-th,td{
-  border:1px solid var(--grid);padding:10px 8px;text-align:center;
-  transition:.25s background-color,.25s color
-}
-thead th{background:rgba(255,255,255,.08);position:sticky;top:0}
-tbody tr{animation:rowIn .45s ease both}
-@keyframes rowIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-tbody tr:hover{background:rgba(255,255,255,.05)}
-td[contenteditable="true"]{background:rgba(255,255,255,.04)}
-td[contenteditable="true"]:focus{outline:2px solid var(--brand)}
-
-.checkbox{
-  appearance:none;width:18px;height:18px;border-radius:6px;
-  border:1px solid #566; background:#0f141c;cursor:pointer;
-  position:relative;transition:all .18s;overflow:hidden
-}
-.checkbox:checked{
-  background:linear-gradient(180deg,var(--brand),var(--brand2));
-  box-shadow:0 0 6px var(--brand2),0 0 12px rgba(169,122,255,.45);
-  border-color:var(--brand2)
-}
-.checkbox:active{transform:scale(.95)}
-
-.footer{
-  padding:12px 14px;background:rgba(0,0,0,.35);
-  font-size:12px;color:var(--muted);backdrop-filter:blur(6px)
-}
-.note{
-  margin-top:8px;padding:10px;border:1px dashed #666;border-radius:10px;
-  background:rgba(255,255,255,.03);transition:.25s
-}
-.note[contenteditable="true"]{outline:2px solid var(--brand)}
-
-@media (max-width:700px){
-  th,td{padding:8px 6px;font-size:12px}
-}
+table{border-collapse:collapse;width:100%;font-size:13px;background:var(--panel);
+  border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
+th,td{border:1px solid var(--grid);padding:10px 8px;text-align:center}
+thead th{background:rgba(255,255,255,.08)}
+.checkbox{appearance:none;width:18px;height:18px;border-radius:6px;
+  border:1px solid #566; background:#0f141c;cursor:pointer}
+.checkbox:checked{background:linear-gradient(180deg,var(--brand),var(--brand2));
+  border-color:var(--brand2)}
+.footer{padding:12px;background:rgba(0,0,0,.35);font-size:12px;color:var(--muted)}
+.note{margin-top:8px;padding:10px;border:1px dashed #666;border-radius:10px;
+  background:rgba(255,255,255,.03);}
 </style>
 </head>
 <body>
 <header>
-  <h1>Presensi Kebersihan Mingguan per Area</h1>
+  <h1>Presensi Kebersihan</h1>
   <div>
     <input type="password" id="adminPass" placeholder="Password Admin (q11)">
     <button id="loginBtn">Login</button>
@@ -97,57 +52,52 @@ td[contenteditable="true"]:focus{outline:2px solid var(--brand)}
 </header>
 
 <div class="toolbar">
-  <select id="yearSelect" title="Pilih Tahun"></select>
-  <select id="monthSelect" title="Pilih Bulan"></select>
+  <select id="yearSelect"></select>
+  <select id="monthSelect"></select>
   <button id="addRow">Tambah Baris</button>
   <button id="delRow">Hapus Baris</button>
   <span class="chip">Mode: <strong id="modeInfo">View Only</strong></span>
 </div>
 
 <div class="wrap">
-  <table id="grid" aria-label="Presensi Kebersihan Mingguan per Area">
+  <table id="grid">
     <thead id="thead"></thead>
     <tbody id="tbody"></tbody>
   </table>
 </div>
 
 <div class="footer">
-  <div>Catatan (per bulan & tahun):</div>
+  <div>Catatan:</div>
   <div class="note" id="note" contenteditable="false">
     Hanya admin yang dapat mengubah catatan ini.
   </div>
 </div>
 
-<!-- Firebase -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+<!-- Firebase v8 compat -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<script>
+  // ===== CONFIG PROJECT ANDA =====
+  const firebaseConfig = {
+    apiKey: "AIzaSyCX-M-eNScPTqmtIOp7Zs1fFwkIg27VkF0",
+    authDomain: "data-jamaah-dapur.firebaseapp.com",
+    projectId: "data-jamaah-dapur",
+    storageBucket: "data-jamaah-dapur.firebasestorage.app",
+    messagingSenderId: "963461575071",
+    appId: "1:963461575071:web:af16848f8f54b99c178daa",
+    measurementId: "G-5X4FTYVR5S"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-/* ====== CONFIG FIREBASE ====== */
-const firebaseConfig = {
-  apiKey: "AIzaSyCX-M-eNScPTqmtIOp7Zs1fFwkIg27VkF0",
-  authDomain: "data-jamaah-dapur.firebaseapp.com",
-  projectId: "data-jamaah-dapur",
-  storageBucket: "data-jamaah-dapur.firebasestorage.app",
-  messagingSenderId: "963461575071",
-  appId: "1:963461575071:web:af16848f8f54b99c178daa",
-  measurementId: "G-5X4FTYVR5S"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-(()=>{
-  /* ========= KONST & STATE ========= */
-  const ADMIN_PASSWORD = "q11";
-  const STORAGE_KEY = "clean-weekly-v2";
-  const docRef = doc(db, STORAGE_KEY, "data");
-
-  const months = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+  // ===== APP STATE =====
+  const ADMIN_PASS = "q11";
   let isAdmin = false;
+  let cache = {};
   let currentYear = new Date().getFullYear();
   let currentMonth = new Date().getMonth();
-  let cache = {}; // data dari Firestore
+  const months = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+  const docRef = db.collection("clean-weekly-v2").doc("data");
 
   const dom = {
     thead: document.getElementById('thead'),
@@ -158,216 +108,124 @@ const db = getFirestore(app);
     addRow: document.getElementById('addRow'),
     delRow: document.getElementById('delRow'),
     modeInfo: document.getElementById('modeInfo'),
-    adminPass: document.getElementById('adminPass'),
     loginBtn: document.getElementById('loginBtn'),
-    logoutBtn: document.getElementById('logoutBtn')
+    logoutBtn: document.getElementById('logoutBtn'),
+    adminPass: document.getElementById('adminPass')
   };
 
-  /* ========= HELPERS ========= */
-  function ymKey(y,m){ return `${y}-${m}`; }
+  function ymKey(y,m){ return y+"-"+m; }
+  function weeksInMonth(y,m){ return Math.ceil(new Date(y,m+1,0).getDate()/7); }
 
-  function getWeeksCount(year,month){
-    const days = new Date(year, month+1, 0).getDate();
-    return Math.ceil(days/7);
-  }
-
-  function buildHead(weeks){
+  function buildHead(w){
     dom.thead.innerHTML = "";
     const tr = document.createElement('tr');
-    tr.innerHTML = "<th>Nama Area</th><th>PJ Kebersihan</th>";
-    for(let i=1;i<=weeks;i++){
-      const th = document.createElement('th');
-      th.textContent = `Minggu ke-${i}`;
-      tr.appendChild(th);
-    }
+    tr.innerHTML = "<th>Area</th><th>PJ</th>";
+    for(let i=1;i<=w;i++){ tr.innerHTML += `<th>Minggu ${i}</th>`; }
     dom.thead.appendChild(tr);
   }
 
-  function createRow(area="", pj="", checks=[], weekCount=4){
+  function createRow(area="",pj="",checks=[],weekCount=4){
     const tr = document.createElement('tr');
-
-    const tdArea = document.createElement('td');
-    tdArea.textContent = area;
-    tdArea.contentEditable = isAdmin;
-    tr.appendChild(tdArea);
-
-    const tdPIC = document.createElement('td');
-    tdPIC.textContent = pj;
-    tdPIC.contentEditable = isAdmin;
-    tr.appendChild(tdPIC);
-
+    const td1=document.createElement('td');
+    td1.textContent=area; td1.contentEditable=isAdmin;
+    const td2=document.createElement('td');
+    td2.textContent=pj; td2.contentEditable=isAdmin;
+    tr.appendChild(td1); tr.appendChild(td2);
     for(let i=0;i<weekCount;i++){
-      const td = document.createElement('td');
-      const cb = document.createElement('input');
-      cb.type = "checkbox";
-      cb.className = "checkbox";
-      cb.checked = !!checks[i];
-      cb.disabled = !isAdmin;
-      cb.addEventListener('change', onAnyEdit);
-      td.appendChild(cb);
-      tr.appendChild(td);
+      const td=document.createElement('td');
+      const cb=document.createElement('input');
+      cb.type="checkbox"; cb.className="checkbox"; cb.checked=!!checks[i]; cb.disabled=!isAdmin;
+      cb.onchange=saveNow;
+      td.appendChild(cb); tr.appendChild(td);
     }
-
-    tdArea.addEventListener('input', debouncedAnyEdit);
-    tdPIC.addEventListener('input', debouncedAnyEdit);
-
+    td1.oninput=debounce(saveNow,400);
+    td2.oninput=debounce(saveNow,400);
     return tr;
   }
 
   function render(store,y,m){
-    let areas = store.areas || [
-      {area:"Lobby", pj:"Budi"},
-      {area:"Toilet", pj:"Siti"}
-    ];
-
-    const weeks = getWeeksCount(y,m);
+    const areas=store.areas||[{area:"Lobby",pj:"Budi"},{area:"Toilet",pj:"Siti"}];
+    const weeks=weeksInMonth(y,m);
     buildHead(weeks);
-    dom.tbody.innerHTML = "";
-
-    const key = ymKey(y,m);
-    const allChecks = (store.checklists && store.checklists[key]) || [];
-
+    dom.tbody.innerHTML="";
+    const key=ymKey(y,m);
+    const all=store.checklists&&store.checklists[key]||[];
     for(let i=0;i<areas.length;i++){
-      const rowChecks = Array.from({length:weeks}, (_,w)=> (allChecks[i] && allChecks[i][w])===true);
-      dom.tbody.appendChild( createRow(areas[i].area, areas[i].pj, rowChecks, weeks) );
+      const arr=Array.from({length:weeks},(_,w)=> all[i]&&all[i][w]);
+      dom.tbody.appendChild(createRow(areas[i].area,areas[i].pj,arr,weeks));
     }
-
-    const noteMap = store.notes || {};
-    dom.note.textContent = noteMap[key] || "Hanya admin yang dapat mengubah catatan ini.";
-
+    dom.note.textContent=(store.notes&&store.notes[key])||"Hanya admin yang dapat mengubah catatan ini.";
     applyMode();
   }
 
-  function collectToStore(){
-    const store = cache || {};
-    const rows = [...dom.tbody.querySelectorAll('tr')];
-
-    store.areas = rows.map(tr=>{
-      const tds = tr.querySelectorAll('td');
-      return { area: tds[0].textContent.trim(), pj: tds[1].textContent.trim() };
+  function collect(){
+    const store=cache||{};
+    const rows=[...dom.tbody.querySelectorAll('tr')];
+    store.areas=rows.map(tr=>{
+      const tds=tr.querySelectorAll('td');
+      return {area:tds[0].textContent.trim(),pj:tds[1].textContent.trim()};
     });
-
-    const key = ymKey(currentYear, currentMonth);
-    store.checklists = store.checklists || {};
-    store.checklists[key] = rows.map(tr=>{
-      return [...tr.querySelectorAll('input[type="checkbox"]')].map(cb=>cb.checked);
-    });
-
-    store.notes = store.notes || {};
-    store.notes[key] = dom.note.textContent;
-
+    const key=ymKey(currentYear,currentMonth);
+    store.checklists=store.checklists||{};
+    store.checklists[key]=rows.map(tr=>[...tr.querySelectorAll('input')].map(cb=>cb.checked));
+    store.notes=store.notes||{};
+    store.notes[key]=dom.note.textContent;
     return store;
   }
 
-  async function saveNow(){
-    if(!isAdmin) return;
-    await setDoc(docRef, collectToStore(), { merge:true });
+  function saveNow(){
+    if(!isAdmin)return;
+    docRef.set(collect(),{merge:true});
   }
 
-  const debouncedAnyEdit = debounce(saveNow, 300);
-  function onAnyEdit(){ saveNow(); }
+  function debounce(fn,ms){let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn.apply(this,a),ms)};}
 
-  function debounce(fn, ms){
-    let t; return function(...args){ clearTimeout(t); t=setTimeout(()=>fn.apply(this,args), ms); };
-  }
-
-  /* ========= MODE ========= */
   function applyMode(){
-    dom.modeInfo.textContent = isAdmin ? "Admin" : "View Only";
-    dom.note.contentEditable = isAdmin ? "true" : "false";
-    dom.addRow.style.display = isAdmin ? "inline-block" : "none";
-    dom.delRow.style.display = isAdmin ? "inline-block" : "none";
-
+    dom.modeInfo.textContent=isAdmin?"Admin":"View Only";
+    dom.note.contentEditable=isAdmin;
+    dom.addRow.style.display=isAdmin?"inline-block":"none";
+    dom.delRow.style.display=isAdmin?"inline-block":"none";
     [...dom.tbody.querySelectorAll('tr')].forEach(tr=>{
-      const tds = tr.querySelectorAll('td');
-      tds[0].contentEditable = isAdmin;
-      tds[1].contentEditable = isAdmin;
-      tr.querySelectorAll('input[type="checkbox"]').forEach(cb=> cb.disabled = !isAdmin);
+      const tds=tr.querySelectorAll('td');
+      tds[0].contentEditable=isAdmin;
+      tds[1].contentEditable=isAdmin;
+      tr.querySelectorAll('input').forEach(cb=>cb.disabled=!isAdmin);
     });
   }
 
-  function addRow(){
-    const weeks = dom.thead.querySelectorAll('th').length - 2;
-    dom.tbody.appendChild( createRow("", "", [], weeks) );
-    saveNow();
-  }
-  function delRow(){
-    const last = dom.tbody.lastElementChild;
-    if(last){
-      last.remove();
-      saveNow();
-    }
-  }
+  dom.note.oninput=debounce(saveNow,500);
+  dom.addRow.onclick=()=>{const w=dom.thead.querySelectorAll('th').length-2;dom.tbody.appendChild(createRow("", "", [], w));saveNow();};
+  dom.delRow.onclick=()=>{if(dom.tbody.lastChild){dom.tbody.lastChild.remove();saveNow();}};
 
-  /* ========= EVENTS ========= */
-  dom.note.addEventListener('input', debouncedAnyEdit);
-  dom.addRow.addEventListener('click', addRow);
-  dom.delRow.addEventListener('click', delRow);
+  dom.year.onchange=()=>{if(isAdmin)saveNow();currentYear=parseInt(dom.year.value);render(cache,currentYear,currentMonth);}
+  dom.month.onchange=()=>{if(isAdmin)saveNow();currentMonth=parseInt(dom.month.value);render(cache,currentYear,currentMonth);}
 
-  dom.year.addEventListener('change', ()=>{
-    if(isAdmin) saveNow();
-    currentYear = parseInt(dom.year.value,10);
-    render(cache, currentYear, currentMonth);
-  });
-  dom.month.addEventListener('change', ()=>{
-    if(isAdmin) saveNow();
-    currentMonth = parseInt(dom.month.value,10);
-    render(cache, currentYear, currentMonth);
-  });
+  dom.loginBtn.onclick=()=>{
+    if(dom.adminPass.value.trim()===ADMIN_PASS){
+      isAdmin=true;applyMode();
+      dom.loginBtn.style.display="none";dom.logoutBtn.style.display="inline-block";dom.adminPass.style.display="none";
+      saveNow();alert("Login Admin sukses");
+    }else alert("Password salah");
+  };
+  dom.logoutBtn.onclick=()=>{
+    saveNow();isAdmin=false;applyMode();
+    dom.loginBtn.style.display="inline-block";dom.logoutBtn.style.display="none";dom.adminPass.style.display="inline-block";dom.adminPass.value="";
+  };
 
-  dom.loginBtn.addEventListener('click', ()=>{
-    const pass = dom.adminPass.value.trim();
-    if(pass === ADMIN_PASSWORD){
-      isAdmin = true;
-      applyMode();
-      dom.loginBtn.style.display="none";
-      dom.logoutBtn.style.display="inline-block";
-      dom.adminPass.style.display="none";
-      saveNow();
-      alert("Login Admin sukses");
-    }else{
-      alert("Password salah");
-    }
-  });
-
-  dom.logoutBtn.addEventListener('click', ()=>{
-    saveNow();
-    isAdmin = false;
-    applyMode();
-    dom.loginBtn.style.display="inline-block";
-    dom.logoutBtn.style.display="none";
-    dom.adminPass.style.display="inline-block";
-    dom.adminPass.value="";
-  });
-
-  /* ========= INIT ========= */
   function initSelectors(){
-    const nowY = new Date().getFullYear();
-    for(let y=nowY-5; y<=nowY+7; y++){
-      const o = document.createElement('option');
-      o.value = y; o.textContent = y;
-      dom.year.appendChild(o);
-    }
-    dom.year.value = currentYear;
-
-    months.forEach((m,i)=>{
-      const o = document.createElement('option');
-      o.value = i; o.textContent = m;
-      dom.month.appendChild(o);
-    });
-    dom.month.value = currentMonth;
+    const y=new Date().getFullYear();
+    for(let i=y-3;i<=y+3;i++){const o=document.createElement('option');o.value=i;o.textContent=i;dom.year.appendChild(o);}
+    dom.year.value=currentYear;
+    months.forEach((m,i)=>{const o=document.createElement('option');o.value=i;o.textContent=m;dom.month.appendChild(o);});
+    dom.month.value=currentMonth;
   }
+  initSelectors();applyMode();
 
-  initSelectors();
-  applyMode();
-
-  /* ========= REALTIME SNAPSHOT ========= */
-  onSnapshot(docRef, (snap)=>{
-    cache = snap.exists() ? snap.data() : {};
-    render(cache, currentYear, currentMonth);
+  // SNAPSHOT realtime
+  docRef.onSnapshot(snap=>{
+    cache=snap.exists?snap.data():{};
+    render(cache,currentYear,currentMonth);
   });
-
-})();
 </script>
 </body>
 </html>
